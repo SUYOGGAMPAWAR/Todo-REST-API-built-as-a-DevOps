@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: todo-prod
+
+bases:
+  - ../../base
+
+# Override image tag (Jenkins replaces IMAGE_TAG_PLACEHOLDER)
+images:
+  - name: your-dockerhub-username/todo-api
+    newTag: IMAGE_TAG_PLACEHOLDER
+
+# Prod: 3 replicas minimum
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: todo-api
+
+configMapGenerator:
+  - name: todo-api-config
+    behavior: merge
+    literals:
+      - NODE_ENV=production
+      - APP_VERSION=stable

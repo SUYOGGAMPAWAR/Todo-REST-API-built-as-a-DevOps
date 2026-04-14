@@ -1,0 +1,54 @@
+# Jenkins Configuration as Code (JCasC)
+# Place this file at: /var/jenkins_home/casc_configs/casc.yaml
+# Set env var: CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs/casc.yaml
+
+jenkins:
+  systemMessage: "Jenkins CI/CD — Todo API DevOps Demo 🚀"
+  numExecutors: 2
+  mode: NORMAL
+  scmCheckoutRetryCount: 3
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "${JENKINS_ADMIN_PASSWORD:-admin123}"
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+tool:
+  nodejs:
+    installations:
+      - name: "NodeJS-20"
+        properties:
+          - installSource:
+              installers:
+                - nodeJSInstaller:
+                    id: "20.11.0"
+                    npmPackagesRefreshHours: 72
+
+  git:
+    installations:
+      - name: "Default"
+        home: "git"
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+  
+  globalLibraries:
+    libraries: []
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "dockerhub-creds"
+              username: "your-dockerhub-username"
+              password: "your-dockerhub-token"
+              description: "Docker Hub credentials"

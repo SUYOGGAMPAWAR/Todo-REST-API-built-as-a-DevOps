@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: todo-api-ingress
+  labels:
+    app: todo-api
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rate-limit: "30"
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: todo-api.local        # Change to your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: todo-api
+                port:
+                  number: 80
+  # Uncomment for TLS:
+  # tls:
+  #   - hosts:
+  #       - todo-api.local
+  #     secretName: todo-api-tls
