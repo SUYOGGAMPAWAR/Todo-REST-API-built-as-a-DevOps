@@ -54,11 +54,15 @@ pipeline {
         }
 
         // ── Stage 2: Install Dependencies ─────────────────
+        // Using 'npm install' instead of 'npm ci' because
+        // package-lock.json is not committed to the repo.
+        // To use 'npm ci' in future: run 'npm install' locally,
+        // commit the generated package-lock.json, then switch back.
         stage('Install') {
             steps {
                 dir('app') {
                     echo "📦 Installing dependencies..."
-                    sh 'npm ci'
+                    sh 'npm install'
                 }
             }
         }
