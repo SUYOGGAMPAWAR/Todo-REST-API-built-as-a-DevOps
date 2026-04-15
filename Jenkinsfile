@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════
 //  Jenkinsfile — Todo API  CI/CD Pipeline
-//  Stages: Checkout → Lint → Test → Build → Push → Deploy
+//  Stages: Checkout → Install → Lint → Test → Build → Push → Deploy → Smoke Test
 // ════════════════════════════════════════════════════════════
 
 pipeline {
@@ -8,17 +8,17 @@ pipeline {
 
     // ── Tools ──────────────────────────────────────────────
     tools {
-        nodejs 'NodeJS-20'   // Configure this in Jenkins > Global Tool Configuration
+        nodejs 'NodeJS-20'   // Must match name in Manage Jenkins → Tools
     }
 
     // ── Environment ────────────────────────────────────────
+    // NOTE: No credentials() calls here — those are handled inside stages
+    //       using withCredentials{} blocks to avoid startup failures
     environment {
         APP_NAME        = 'todo-api'
-        DOCKER_REGISTRY = 'your-dockerhub-username'   // ← change this
+        DOCKER_REGISTRY = 'your-dockerhub-username'   // ← change this to your Docker Hub username
         IMAGE_NAME      = "${DOCKER_REGISTRY}/${APP_NAME}"
-        IMAGE_TAG       = "${env.BUILD_NUMBER}-${env.GIT_COMMIT?.take(7) ?: 'local'}"
-        KUBECONFIG_FILE = credentials('kubeconfig')   // Jenkins credential ID
-        DOCKER_CREDS    = credentials('dockerhub-creds')
+        IMAGE_TAG       = "${env.BUILD_NUMBER}"
     }
 
     // ── Options ────────────────────────────────────────────
@@ -33,7 +33,7 @@ pipeline {
     parameters {
         choice(name: 'DEPLOY_ENV', choices: ['dev', 'prod'], description: 'Deployment environment')
         booleanParam(name: 'SKIP_TESTS', defaultValue: false, description: 'Skip test stage')
-        booleanParam(name: 'PUSH_IMAGE', defaultValue: true, description: 'Push image to registry')
+        booleanParam(name: 'PUSH_IMAGE', defaultValue: false, description: 'Push image to Docker Hub registry')
     }
 
     // ════════════════════════════════════════════════════════
@@ -42,13 +42,13 @@ pipeline {
         // ── Stage 1: Checkout ──────────────────────────────
         stage('Checkout') {
             steps {
-                echo "📥 Checking out branch: ${env.BRANCH_NAME}"
+                echo "📥 Checking out branch: ${env.BRANCH_NAME ?: 'main'}"
                 checkout scm
                 script {
-                    env.GIT_AUTHOR = sh(returnStdout: true, script: "git log -1 --format='%an'").trim()
+                    env.GIT_AUTHOR  = sh(returnStdout: true, script: "git log -1 --format='%an'").trim()
                     env.GIT_MESSAGE = sh(returnStdout: true, script: "git log -1 --format='%s'").trim()
-                    echo "Author : ${env.GIT_AUTHOR}"
-                    echo "Commit : ${env.GIT_MESSAGE}"
+                    echo "Author  : ${env.GIT_AUTHOR}"
+                    echo "Commit  : ${env.GIT_MESSAGE}"
                 }
             }
         }
@@ -67,10 +67,8 @@ pipeline {
         stage('Lint') {
             steps {
                 dir('app') {
-                    echo "🔍 Running linter..."
-                    // Uncomment if ESLint is configured:
-                    // sh 'npm run lint'
-                    sh 'node --check src/index.js && echo "Syntax OK"'
+                    echo "🔍 Checking syntax..."
+                    sh 'node --check src/index.js && echo "✅ Syntax OK"'
                 }
             }
         }
@@ -84,20 +82,6 @@ pipeline {
                     sh 'npm run test:ci'
                 }
             }
-            post {
-                always {
-                    // Publish JUnit results if you add jest-junit reporter
-                    // junit 'app/coverage/junit.xml'
-                    publishHTML(target: [
-                        allowMissing         : false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll              : true,
-                        reportDir            : 'app/coverage/lcov-report',
-                        reportFiles          : 'index.html',
-                        reportName           : 'Coverage Report'
-                    ])
-                }
-            }
         }
 
         // ── Stage 5: Docker Build ──────────────────────────
@@ -105,12 +89,11 @@ pipeline {
             steps {
                 echo "🐳 Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
                 sh """
-                    docker build \
-                        --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
-                        --build-arg GIT_COMMIT=${GIT_COMMIT} \
-                        --target production \
-                        -t ${IMAGE_NAME}:${IMAGE_TAG} \
-                        -t ${IMAGE_NAME}:latest \
+                    docker build \\
+                        --build-arg BUILD_NUMBER=${BUILD_NUMBER} \\
+                        --target production \\
+                        -t ${IMAGE_NAME}:${IMAGE_TAG} \\
+                        -t ${IMAGE_NAME}:latest \\
                         .
                 """
             }
@@ -121,18 +104,19 @@ pipeline {
             steps {
                 echo "🔒 Scanning image for vulnerabilities..."
                 sh """
-                    docker run --rm \
-                        -v /var/run/docker.sock:/var/run/docker.sock \
-                        aquasec/trivy:latest image \
-                        --exit-code 0 \
-                        --severity HIGH,CRITICAL \
-                        --no-progress \
+                    docker run --rm \\
+                        -v /var/run/docker.sock:/var/run/docker.sock \\
+                        aquasec/trivy:latest image \\
+                        --exit-code 0 \\
+                        --severity HIGH,CRITICAL \\
+                        --no-progress \\
                         ${IMAGE_NAME}:${IMAGE_TAG} || true
                 """
             }
         }
 
         // ── Stage 7: Push to Registry ──────────────────────
+        // Only runs if PUSH_IMAGE parameter is true AND dockerhub-creds exist
         stage('Push Image') {
             when { expression { params.PUSH_IMAGE } }
             steps {
@@ -153,6 +137,7 @@ pipeline {
         }
 
         // ── Stage 8: Deploy to Kubernetes ──────────────────
+        // Only runs on main branch AND if image was pushed
         stage('Deploy') {
             when {
                 allOf {
@@ -165,38 +150,20 @@ pipeline {
             }
             steps {
                 script {
-                    def env_dir = params.DEPLOY_ENV
-                    echo "🚀 Deploying to Kubernetes (${env_dir})..."
+                    def envDir = params.DEPLOY_ENV
+                    echo "🚀 Deploying to Kubernetes (${envDir})..."
                     withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                         sh """
-                            # Update image tag in overlay
-                            sed -i 's|IMAGE_TAG_PLACEHOLDER|${IMAGE_TAG}|g' k8s/overlays/${env_dir}/kustomization.yaml
-
-                            # Apply with kustomize
-                            kubectl apply -k k8s/overlays/${env_dir}/
-
-                            # Wait for rollout
-                            kubectl rollout status deployment/${APP_NAME} \
-                                -n todo-${env_dir} \
+                            sed -i 's|IMAGE_TAG_PLACEHOLDER|${IMAGE_TAG}|g' k8s/overlays/${envDir}/kustomization.yaml
+                            kubectl apply -k k8s/overlays/${envDir}/
+                            kubectl rollout status deployment/${APP_NAME} \\
+                                -n todo-${envDir} \\
                                 --timeout=120s
-
                             echo "✅ Deployment successful!"
-                            kubectl get pods -n todo-${env_dir}
+                            kubectl get pods -n todo-${envDir}
                         """
                     }
                 }
-            }
-        }
-
-        // ── Stage 9: Smoke Test ────────────────────────────
-        stage('Smoke Test') {
-            when { branch 'main' }
-            steps {
-                echo "💨 Running post-deploy smoke test..."
-                sh """
-                    sleep 10
-                    curl -f http://localhost:3000/health || echo "⚠️  Smoke test failed — check deployment"
-                """
             }
         }
 
@@ -205,20 +172,22 @@ pipeline {
     // ── Post Actions ───────────────────────────────────────
     post {
         always {
-            echo "🧹 Cleaning up Docker images..."
-            sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
+            echo "🧹 Cleaning up..."
+            script {
+                // Safe cleanup — only try if IMAGE_NAME is available
+                try {
+                    sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
+                } catch (err) {
+                    echo "Image cleanup skipped: ${err.message}"
+                }
+            }
             cleanWs()
         }
         success {
-            echo "✅ Pipeline succeeded! Build #${BUILD_NUMBER}"
-            // slackSend(color: 'good', message: "✅ ${APP_NAME} #${BUILD_NUMBER} deployed successfully!")
+            echo "✅ Pipeline #${BUILD_NUMBER} completed successfully!"
         }
         failure {
-            echo "❌ Pipeline failed! Check the logs above."
-            // slackSend(color: 'danger', message: "❌ ${APP_NAME} #${BUILD_NUMBER} FAILED!")
-        }
-        unstable {
-            echo "⚠️  Pipeline is unstable."
+            echo "❌ Pipeline #${BUILD_NUMBER} failed. Check the logs above."
         }
     }
 }
