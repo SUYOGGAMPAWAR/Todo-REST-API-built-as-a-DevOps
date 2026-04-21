@@ -5,422 +5,579 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>DevOps Todo API</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0f1117;
-    color: #e2e8f0;
-    min-height: 100vh;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 2rem 1rem;
-  }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #080c14;
+  color: #e2e8f0;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2.5rem 1rem 4rem;
+}
 
-  .app {
-    width: 100%;
-    max-width: 620px;
-  }
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
 
-  /* ── Header ── */
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-  }
+.glow {
+  position: fixed;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 300px;
+  background: radial-gradient(ellipse, rgba(59,130,246,0.10) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
 
-  .header h1 {
-    font-size: 22px;
-    font-weight: 600;
-    color: #f1f5f9;
-    letter-spacing: -0.3px;
-  }
+.app {
+  width: 100%;
+  max-width: 660px;
+  position: relative;
+  z-index: 1;
+}
 
-  .status-pill {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    padding: 4px 10px;
-    border-radius: 20px;
-    border: 1px solid;
-    transition: all 0.3s;
-  }
+/* ── Header ── */
+.header {
+  text-align: center;
+  margin-bottom: 1.75rem;
+  padding-top: 0.5rem;
+}
 
-  .status-pill.up    { color: #4ade80; border-color: #166534; background: #052e16; }
-  .status-pill.down  { color: #f87171; border-color: #7f1d1d; background: #1c0a0a; }
-  .status-pill.check { color: #94a3b8; border-color: #334155; background: #1e293b; }
+.logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
 
-  .dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: currentColor;
-  }
+.logo-icon {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 0 20px rgba(99,102,241,0.3);
+}
 
-  .dot.pulse {
-    animation: pulse 1.5s infinite;
-  }
+.header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f1f5f9 30%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.3; }
-  }
+.tagline {
+  font-size: 12px;
+  color: #334155;
+  font-family: 'Courier New', monospace;
+}
 
-  .subtitle {
-    font-size: 12px;
-    color: #475569;
-    font-family: 'Courier New', monospace;
-    margin-bottom: 1.5rem;
-  }
+/* ── Status bar ── */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 1.5rem;
+  padding: 10px 24px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 40px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
 
-  /* ── Stats ── */
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 1.5rem;
-  }
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+}
 
-  .stat {
-    background: #1e293b;
-    border: 1px solid #1e293b;
-    border-radius: 10px;
-    padding: 12px 14px;
-  }
+.s-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #1e293b;
+}
 
-  .stat .label {
-    font-size: 11px;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
-  }
+.s-dot.green { background: #4ade80; box-shadow: 0 0 7px rgba(74,222,128,0.7); animation: blink 2s infinite; }
+.s-dot.red   { background: #f87171; }
 
-  .stat .val {
-    font-size: 26px;
-    font-weight: 600;
-    color: #f1f5f9;
-  }
+@keyframes blink {
+  0%,100% { opacity:1; } 50% { opacity:0.35; }
+}
 
-  .stat.total .val { color: #60a5fa; }
-  .stat.done  .val { color: #4ade80; }
-  .stat.pend  .val { color: #fb923c; }
+.s-val { font-weight: 600; font-size: 12px; color: #94a3b8; }
+.s-val.up   { color: #4ade80; }
+.s-val.down { color: #f87171; }
 
-  /* ── Input row ── */
-  .input-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 1.5rem;
-  }
+.vdot { width: 3px; height: 3px; border-radius: 50%; background: #1e293b; }
 
-  .input-row input {
-    flex: 1;
-    padding: 10px 14px;
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    color: #f1f5f9;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
+/* ── Stats ── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
 
-  .input-row input:focus { border-color: #3b82f6; }
-  .input-row input::placeholder { color: #475569; }
+.stat {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 18px 14px;
+  text-align: center;
+  transition: border-color 0.2s, transform 0.2s;
+}
 
-  .input-row button {
-    padding: 10px 18px;
-    background: #2563eb;
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
-    white-space: nowrap;
-  }
+.stat:hover { border-color: rgba(255,255,255,0.14); transform: translateY(-2px); }
 
-  .input-row button:hover  { background: #1d4ed8; }
-  .input-row button:active { transform: scale(0.97); }
+.stat-icon { font-size: 22px; margin-bottom: 8px; }
+.stat-num  { font-size: 30px; font-weight: 700; line-height: 1; margin-bottom: 5px; }
+.stat-lbl  { font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 0.6px; }
 
-  /* ── Error ── */
-  .err {
-    font-size: 12px;
-    color: #f87171;
-    background: #1c0a0a;
-    border: 1px solid #7f1d1d;
-    border-radius: 8px;
-    padding: 8px 12px;
-    margin-bottom: 12px;
-    display: none;
-  }
+.stat.total .stat-num { color: #60a5fa; }
+.stat.done  .stat-num { color: #4ade80; }
+.stat.pend  .stat-num { color: #fb923c; }
 
-  /* ── Todo items ── */
-  .todo-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    background: #1e293b;
-    border: 1px solid #1e293b;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    transition: border-color 0.2s, opacity 0.2s;
-  }
+/* ── Panel ── */
+.panel {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
 
-  .todo-item:hover { border-color: #334155; }
-  .todo-item.done  { opacity: 0.5; }
+.panel-top {
+  display: flex;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  gap: 8px;
+}
 
-  .check-box {
-    width: 20px; height: 20px;
-    border: 2px solid #334155;
-    border-radius: 5px;
-    cursor: pointer;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-  }
+.panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  flex: 1;
+}
 
-  .check-box:hover { border-color: #4ade80; }
+.cnt-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(96,165,250,0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(96,165,250,0.2);
+}
 
-  .check-box.checked {
-    background: #166534;
-    border-color: #4ade80;
-  }
+/* ── Input ── */
+.input-wrap {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  gap: 10px;
+}
 
-  .check-box.checked::after {
-    content: '';
-    width: 5px; height: 9px;
-    border: 2px solid #4ade80;
-    border-top: none;
-    border-left: none;
-    transform: rotate(45deg);
-    margin-top: -2px;
-  }
+.input-wrap input {
+  flex: 1;
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
 
-  .todo-title {
-    flex: 1;
-    font-size: 14px;
-    color: #e2e8f0;
-  }
+.input-wrap input:focus {
+  border-color: rgba(99,102,241,0.5);
+  background: rgba(99,102,241,0.05);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+}
 
-  .todo-title.done {
-    text-decoration: line-through;
-    color: #475569;
-  }
+.input-wrap input::placeholder { color: #334155; }
 
-  .todo-id {
-    font-size: 11px;
-    color: #334155;
-    font-family: 'Courier New', monospace;
-  }
+.add-btn {
+  padding: 11px 20px;
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s, transform 0.1s;
+  box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+}
 
-  .del-btn {
-    width: 28px; height: 28px;
-    border: none;
-    background: transparent;
-    color: #475569;
-    cursor: pointer;
-    border-radius: 6px;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s, color 0.2s;
-    line-height: 1;
-  }
+.add-btn:hover  { opacity: 0.88; }
+.add-btn:active { transform: scale(0.97); }
 
-  .del-btn:hover { background: #450a0a; color: #f87171; }
+/* ── Error ── */
+.err {
+  font-size: 12px;
+  color: #fca5a5;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.18);
+  border-radius: 8px;
+  padding: 9px 14px;
+  margin: 10px 14px 0;
+  display: none;
+}
 
-  /* ── Empty state ── */
-  .empty {
-    text-align: center;
-    padding: 2.5rem;
-    color: #475569;
-    font-size: 14px;
-    border: 1px dashed #1e293b;
-    border-radius: 10px;
-  }
+/* ── Todo items ── */
+.todo-wrap { padding: 6px 8px; }
 
-  .empty .icon { font-size: 32px; margin-bottom: 8px; }
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  transition: background 0.15s;
+}
 
-  /* ── Footer ── */
-  .footer {
-    margin-top: 1.5rem;
-    font-size: 11px;
-    color: #334155;
-    text-align: center;
-  }
+.todo-item:hover { background: rgba(255,255,255,0.04); }
+.todo-item.done  { opacity: 0.4; }
 
-  .footer span { color: #4ade80; }
+.sep { height: 1px; background: rgba(255,255,255,0.04); margin: 2px 0; }
+
+.chk {
+  width: 22px; height: 22px;
+  border: 2px solid #1e293b;
+  border-radius: 7px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+
+.chk:hover { border-color: #4ade80; background: rgba(74,222,128,0.07); }
+
+.chk.checked {
+  background: rgba(74,222,128,0.12);
+  border-color: rgba(74,222,128,0.45);
+}
+
+.chk.checked::after {
+  content: '';
+  width: 5px; height: 9px;
+  border: 2px solid #4ade80;
+  border-top: none; border-left: none;
+  transform: rotate(45deg);
+  margin-top: -2px;
+}
+
+.todo-body { flex: 1; min-width: 0; }
+
+.todo-title {
+  font-size: 14px;
+  color: #cbd5e1;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.todo-title.done { text-decoration: line-through; color: #334155; }
+
+.todo-id {
+  font-size: 10px;
+  color: #1e293b;
+  font-family: 'Courier New', monospace;
+  margin-top: 2px;
+}
+
+.del {
+  width: 30px; height: 30px;
+  border: none; background: transparent;
+  color: #334155;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.del:hover { background: rgba(239,68,68,0.12); color: #f87171; }
+
+/* ── Empty ── */
+.empty {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-box {
+  width: 60px; height: 60px;
+  border: 2px dashed #1e293b;
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  margin: 0 auto 12px;
+  color: #1e293b;
+}
+
+.empty p { font-size: 14px; color: #334155; }
+
+/* ── Skeleton ── */
+.sk {
+  height: 46px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  margin: 8px;
+  animation: shimmer 1.6s infinite;
+}
+
+@keyframes shimmer {
+  0%,100% { opacity:0.5; } 50% { opacity:1; }
+}
+
+/* ── Tech pills ── */
+.tech-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: 0.2px;
+  transition: opacity 0.2s;
+}
+
+.pill:hover { opacity: 0.75; }
+.pill.b { color: #60a5fa; border-color: rgba(96,165,250,0.25);  background: rgba(96,165,250,0.07); }
+.pill.o { color: #fb923c; border-color: rgba(251,146,60,0.25);  background: rgba(251,146,60,0.07); }
+.pill.g { color: #4ade80; border-color: rgba(74,222,128,0.25);  background: rgba(74,222,128,0.07); }
+.pill.p { color: #a78bfa; border-color: rgba(167,139,250,0.25); background: rgba(167,139,250,0.07); }
+
+.pdot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 </style>
 </head>
 <body>
 
+<div class="glow"></div>
+
 <div class="app">
 
   <div class="header">
-    <h1>DevOps Todo API</h1>
-    <div class="status-pill check" id="status-pill">
-      <div class="dot pulse" id="status-dot"></div>
-      <span id="status-text">Checking...</span>
+    <div class="logo-row">
+      <div class="logo-icon">📋</div>
+      <h1>DevOps Todo API</h1>
+    </div>
+    <p class="tagline">localhost:3000 &nbsp;·&nbsp; Kubernetes (Minikube) &nbsp;·&nbsp; Jenkins CI/CD</p>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-item">
+      <div class="s-dot" id="h-dot"></div>
+      <span>Health</span>
+      <span class="s-val" id="h-val">—</span>
+    </div>
+    <div class="vdot"></div>
+    <div class="status-item">
+      <div class="s-dot" id="r-dot"></div>
+      <span>Ready</span>
+      <span class="s-val" id="r-val">—</span>
+    </div>
+    <div class="vdot"></div>
+    <div class="status-item">
+      <span>Version</span>
+      <span class="s-val" id="v-val">—</span>
     </div>
   </div>
-  <p class="subtitle">localhost:3000/api/todos &nbsp;·&nbsp; Kubernetes (Minikube)</p>
 
   <div class="stats">
-    <div class="stat total"><div class="label">Total</div><div class="val" id="stat-total">—</div></div>
-    <div class="stat done"> <div class="label">Done</div> <div class="val" id="stat-done">—</div></div>
-    <div class="stat pend"> <div class="label">Pending</div><div class="val" id="stat-pending">—</div></div>
+    <div class="stat total">
+      <div class="stat-icon">📦</div>
+      <div class="stat-num" id="s-total">—</div>
+      <div class="stat-lbl">Total</div>
+    </div>
+    <div class="stat done">
+      <div class="stat-icon">✅</div>
+      <div class="stat-num" id="s-done">—</div>
+      <div class="stat-lbl">Done</div>
+    </div>
+    <div class="stat pend">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-num" id="s-pend">—</div>
+      <div class="stat-lbl">Pending</div>
+    </div>
   </div>
 
-  <div class="input-row">
-    <input id="new-title" type="text" placeholder="Add a new todo and press Enter..." />
-    <button id="add-btn">+ Add</button>
+  <div class="panel">
+    <div class="panel-top">
+      <span class="panel-title">Todos</span>
+      <span class="cnt-badge" id="cnt">0</span>
+    </div>
+    <div class="input-wrap">
+      <input id="inp" type="text" placeholder="What needs to be done?" />
+      <button class="add-btn" id="add-btn">+ Add</button>
+    </div>
+    <div id="err" class="err"></div>
+    <div id="list">
+      <div class="sk"></div>
+      <div class="sk" style="opacity:.55;margin-top:4px"></div>
+      <div class="sk" style="opacity:.3;margin-top:4px"></div>
+    </div>
   </div>
 
-  <div id="err" class="err"></div>
-  <div id="todo-list"></div>
-
-  <div class="footer">
-    Built with <span>Node.js · Docker · Jenkins · Kubernetes</span>
+  <div class="tech-row">
+    <div class="pill b"><div class="pdot"></div>Docker</div>
+    <div class="pill o"><div class="pdot"></div>Jenkins</div>
+    <div class="pill g"><div class="pdot"></div>Kubernetes</div>
+    <div class="pill p"><div class="pdot"></div>Node.js</div>
   </div>
 
 </div>
 
 <script>
-  const API = 'http://localhost:3000';
-  let todos = [];
+const API = 'http://localhost:3000';
+let todos = [];
 
-  async function checkHealth() {
-    try {
-      const r = await fetch(API + '/health');
-      const d = await r.json();
-      const pill = document.getElementById('status-pill');
-      const dot  = document.getElementById('status-dot');
-      const txt  = document.getElementById('status-text');
-      if (d.status === 'UP') {
-        pill.className = 'status-pill up';
-        dot.classList.remove('pulse');
-        txt.textContent = 'UP · v' + (d.version || '1.0.0');
-      } else {
-        pill.className = 'status-pill down';
-        txt.textContent = 'DOWN';
-      }
-    } catch {
-      const pill = document.getElementById('status-pill');
-      document.getElementById('status-text').textContent = 'Offline';
-      pill.className = 'status-pill down';
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function showErr(m) {
+  const e = document.getElementById('err');
+  e.textContent = m; e.style.display = 'block';
+  setTimeout(() => e.style.display = 'none', 5000);
+}
+
+async function checkHealth() {
+  try {
+    const d = await (await fetch(API+'/health')).json();
+    const ok = d.status === 'UP';
+    document.getElementById('h-dot').className = 's-dot ' + (ok?'green':'red');
+    document.getElementById('h-val').className = 's-val ' + (ok?'up':'down');
+    document.getElementById('h-val').textContent = ok ? 'UP' : 'DOWN';
+    if (ok) {
+      document.getElementById('v-val').textContent = d.version || '1.0.0';
+      document.getElementById('v-val').className = 's-val up';
     }
+  } catch {
+    document.getElementById('h-dot').className = 's-dot red';
+    document.getElementById('h-val').textContent = 'Offline';
+    document.getElementById('h-val').className = 's-val down';
   }
+}
 
-  async function loadTodos() {
-    try {
-      const r = await fetch(API + '/api/todos');
-      const d = await r.json();
-      todos = d.data || [];
-      render();
-    } catch {
-      showErr('Cannot reach localhost:3000. Make sure kubectl port-forward svc/todo-api 3000:80 -n todo-dev is running.');
+async function checkReady() {
+  try {
+    const d = await (await fetch(API+'/ready')).json();
+    if (d.status === 'READY') {
+      document.getElementById('r-dot').className = 's-dot green';
+      document.getElementById('r-val').textContent = 'READY';
+      document.getElementById('r-val').className = 's-val up';
     }
-  }
+  } catch {}
+}
 
-  function showErr(msg) {
-    const e = document.getElementById('err');
-    e.textContent = msg;
-    e.style.display = 'block';
-    setTimeout(() => e.style.display = 'none', 5000);
-  }
+function updateStats() {
+  const done = todos.filter(t=>t.completed).length;
+  document.getElementById('s-total').textContent = todos.length;
+  document.getElementById('s-done').textContent  = done;
+  document.getElementById('s-pend').textContent  = todos.length - done;
+  document.getElementById('cnt').textContent     = todos.length;
+}
 
-  function updateStats() {
-    const done = todos.filter(t => t.completed).length;
-    document.getElementById('stat-total').textContent   = todos.length;
-    document.getElementById('stat-done').textContent    = done;
-    document.getElementById('stat-pending').textContent = todos.length - done;
+function render() {
+  updateStats();
+  const el = document.getElementById('list');
+  if (!todos.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-box">📋</div><p>No todos yet — add one above!</p></div>`;
+    return;
   }
-
-  function render() {
-    updateStats();
-    const list = document.getElementById('todo-list');
-    if (todos.length === 0) {
-      list.innerHTML = `
-        <div class="empty">
-          <div class="icon">📋</div>
-          No todos yet — add one above!
-        </div>`;
-      return;
-    }
-    list.innerHTML = todos.map(t => `
-      <div class="todo-item ${t.completed ? 'done' : ''}" id="item-${t.id}">
-        <div class="check-box ${t.completed ? 'checked' : ''}" onclick="toggleTodo(${t.id}, ${!t.completed})"></div>
-        <span class="todo-title ${t.completed ? 'done' : ''}">${escHtml(t.title)}</span>
-        <span class="todo-id">#${t.id}</span>
-        <button class="del-btn" onclick="deleteTodo(${t.id})" title="Delete">×</button>
+  el.innerHTML = '<div class="todo-wrap">' +
+    todos.map((t,i) => `
+      <div class="todo-item ${t.completed?'done':''}">
+        <div class="chk ${t.completed?'checked':''}" onclick="toggle(${t.id},${!t.completed})"></div>
+        <div class="todo-body">
+          <span class="todo-title ${t.completed?'done':''}">${esc(t.title)}</span>
+          <span class="todo-id">#${t.id}</span>
+        </div>
+        <button class="del" onclick="del(${t.id})">×</button>
       </div>
-    `).join('');
+      ${i < todos.length-1 ? '<div class="sep"></div>' : ''}
+    `).join('') + '</div>';
+}
+
+async function load() {
+  try {
+    const d = await (await fetch(API+'/api/todos')).json();
+    todos = d.data || []; render();
+  } catch {
+    document.getElementById('list').innerHTML = '';
+    showErr('Cannot reach localhost:3000 — run: kubectl port-forward svc/todo-api 3000:80 -n todo-dev');
   }
+}
 
-  function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+async function add() {
+  const inp = document.getElementById('inp');
+  const t = inp.value.trim(); if (!t) { inp.focus(); return; }
+  try {
+    const d = await (await fetch(API+'/api/todos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t})})).json();
+    if (d.success) { todos.push(d.data); inp.value=''; render(); }
+  } catch { showErr('Failed to add.'); }
+}
 
-  async function addTodo() {
-    const inp   = document.getElementById('new-title');
-    const title = inp.value.trim();
-    if (!title) return;
-    try {
-      const r = await fetch(API + '/api/todos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title })
-      });
-      const d = await r.json();
-      if (d.success) {
-        todos.push(d.data);
-        inp.value = '';
-        render();
-      }
-    } catch { showErr('Failed to add todo.'); }
-  }
+async function toggle(id, completed) {
+  try {
+    const d = await (await fetch(API+'/api/todos/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({completed})})).json();
+    if (d.success) { todos = todos.map(t => t.id===id ? d.data : t); render(); }
+  } catch { showErr('Failed to update.'); }
+}
 
-  async function toggleTodo(id, completed) {
-    try {
-      const r = await fetch(API + '/api/todos/' + id, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed })
-      });
-      const d = await r.json();
-      if (d.success) {
-        todos = todos.map(t => t.id === id ? d.data : t);
-        render();
-      }
-    } catch { showErr('Failed to update todo.'); }
-  }
+async function del(id) {
+  try {
+    const d = await (await fetch(API+'/api/todos/'+id,{method:'DELETE'})).json();
+    if (d.success) { todos = todos.filter(t => t.id!==id); render(); }
+  } catch { showErr('Failed to delete.'); }
+}
 
-  async function deleteTodo(id) {
-    try {
-      const r = await fetch(API + '/api/todos/' + id, { method: 'DELETE' });
-      const d = await r.json();
-      if (d.success) {
-        todos = todos.filter(t => t.id !== id);
-        render();
-      }
-    } catch { showErr('Failed to delete todo.'); }
-  }
+document.getElementById('add-btn').onclick = add;
+document.getElementById('inp').onkeydown = e => e.key==='Enter' && add();
 
-  document.getElementById('add-btn').onclick = addTodo;
-  document.getElementById('new-title').onkeydown = e => { if (e.key === 'Enter') addTodo(); };
-
-  checkHealth();
-  loadTodos();
-  setInterval(checkHealth, 10000);
+checkHealth(); checkReady(); load();
+setInterval(checkHealth, 10000);
 </script>
 </body>
 </html>
