@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DevOps Todo API</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 620px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #f1f5f9;
+    letter-spacing: -0.3px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    transition: all 0.3s;
+  }
+
+  .status-pill.up    { color: #4ade80; border-color: #166534; background: #052e16; }
+  .status-pill.down  { color: #f87171; border-color: #7f1d1d; background: #1c0a0a; }
+  .status-pill.check { color: #94a3b8; border-color: #334155; background: #1e293b; }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .dot.pulse {
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  .subtitle {
+    font-size: 12px;
+    color: #475569;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ── Stats ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat {
+    background: #1e293b;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+
+  .stat .label {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .stat .val {
+    font-size: 26px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  .stat.total .val { color: #60a5fa; }
+  .stat.done  .val { color: #4ade80; }
+  .stat.pend  .val { color: #fb923c; }
+
+  /* ── Input row ── */
+  .input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  .input-row input {
+    flex: 1;
+    padding: 10px 14px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #f1f5f9;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input-row input:focus { border-color: #3b82f6; }
+  .input-row input::placeholder { color: #475569; }
+
+  .input-row button {
+    padding: 10px 18px;
+    background: #2563eb;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .input-row button:hover  { background: #1d4ed8; }
+  .input-row button:active { transform: scale(0.97); }
+
+  /* ── Error ── */
+  .err {
+    font-size: 12px;
+    color: #f87171;
+    background: #1c0a0a;
+    border: 1px solid #7f1d1d;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    display: none;
+  }
+
+  /* ── Todo items ── */
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #1e293b;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    transition: border-color 0.2s, opacity 0.2s;
+  }
+
+  .todo-item:hover { border-color: #334155; }
+  .todo-item.done  { opacity: 0.5; }
+
+  .check-box {
+    width: 20px; height: 20px;
+    border: 2px solid #334155;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .check-box:hover { border-color: #4ade80; }
+
+  .check-box.checked {
+    background: #166534;
+    border-color: #4ade80;
+  }
+
+  .check-box.checked::after {
+    content: '';
+    width: 5px; height: 9px;
+    border: 2px solid #4ade80;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+    margin-top: -2px;
+  }
+
+  .todo-title {
+    flex: 1;
+    font-size: 14px;
+    color: #e2e8f0;
+  }
+
+  .todo-title.done {
+    text-decoration: line-through;
+    color: #475569;
+  }
+
+  .todo-id {
+    font-size: 11px;
+    color: #334155;
+    font-family: 'Courier New', monospace;
+  }
+
+  .del-btn {
+    width: 28px; height: 28px;
+    border: none;
+    background: transparent;
+    color: #475569;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+    line-height: 1;
+  }
+
+  .del-btn:hover { background: #450a0a; color: #f87171; }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 2.5rem;
+    color: #475569;
+    font-size: 14px;
+    border: 1px dashed #1e293b;
+    border-radius: 10px;
+  }
+
+  .empty .icon { font-size: 32px; margin-bottom: 8px; }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 1.5rem;
+    font-size: 11px;
+    color: #334155;
+    text-align: center;
+  }
+
+  .footer span { color: #4ade80; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <h1>DevOps Todo API</h1>
+    <div class="status-pill check" id="status-pill">
+      <div class="dot pulse" id="status-dot"></div>
+      <span id="status-text">Checking...</span>
+    </div>
+  </div>
+  <p class="subtitle">localhost:3000/api/todos &nbsp;·&nbsp; Kubernetes (Minikube)</p>
+
+  <div class="stats">
+    <div class="stat total"><div class="label">Total</div><div class="val" id="stat-total">—</div></div>
+    <div class="stat done"> <div class="label">Done</div> <div class="val" id="stat-done">—</div></div>
+    <div class="stat pend"> <div class="label">Pending</div><div class="val" id="stat-pending">—</div></div>
+  </div>
+
+  <div class="input-row">
+    <input id="new-title" type="text" placeholder="Add a new todo and press Enter..." />
+    <button id="add-btn">+ Add</button>
+  </div>
+
+  <div id="err" class="err"></div>
+  <div id="todo-list"></div>
+
+  <div class="footer">
+    Built with <span>Node.js · Docker · Jenkins · Kubernetes</span>
+  </div>
+
+</div>
+
+<script>
+  const API = 'http://localhost:3000';
+  let todos = [];
+
+  async function checkHealth() {
+    try {
+      const r = await fetch(API + '/health');
+      const d = await r.json();
+      const pill = document.getElementById('status-pill');
+      const dot  = document.getElementById('status-dot');
+      const txt  = document.getElementById('status-text');
+      if (d.status === 'UP') {
+        pill.className = 'status-pill up';
+        dot.classList.remove('pulse');
+        txt.textContent = 'UP · v' + (d.version || '1.0.0');
+      } else {
+        pill.className = 'status-pill down';
+        txt.textContent = 'DOWN';
+      }
+    } catch {
+      const pill = document.getElementById('status-pill');
+      document.getElementById('status-text').textContent = 'Offline';
+      pill.className = 'status-pill down';
+    }
+  }
+
+  async function loadTodos() {
+    try {
+      const r = await fetch(API + '/api/todos');
+      const d = await r.json();
+      todos = d.data || [];
+      render();
+    } catch {
+      showErr('Cannot reach localhost:3000. Make sure kubectl port-forward svc/todo-api 3000:80 -n todo-dev is running.');
+    }
+  }
+
+  function showErr(msg) {
+    const e = document.getElementById('err');
+    e.textContent = msg;
+    e.style.display = 'block';
+    setTimeout(() => e.style.display = 'none', 5000);
+  }
+
+  function updateStats() {
+    const done = todos.filter(t => t.completed).length;
+    document.getElementById('stat-total').textContent   = todos.length;
+    document.getElementById('stat-done').textContent    = done;
+    document.getElementById('stat-pending').textContent = todos.length - done;
+  }
+
+  function render() {
+    updateStats();
+    const list = document.getElementById('todo-list');
+    if (todos.length === 0) {
+      list.innerHTML = `
+        <div class="empty">
+          <div class="icon">📋</div>
+          No todos yet — add one above!
+        </div>`;
+      return;
+    }
+    list.innerHTML = todos.map(t => `
+      <div class="todo-item ${t.completed ? 'done' : ''}" id="item-${t.id}">
+        <div class="check-box ${t.completed ? 'checked' : ''}" onclick="toggleTodo(${t.id}, ${!t.completed})"></div>
+        <span class="todo-title ${t.completed ? 'done' : ''}">${escHtml(t.title)}</span>
+        <span class="todo-id">#${t.id}</span>
+        <button class="del-btn" onclick="deleteTodo(${t.id})" title="Delete">×</button>
+      </div>
+    `).join('');
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function addTodo() {
+    const inp   = document.getElementById('new-title');
+    const title = inp.value.trim();
+    if (!title) return;
+    try {
+      const r = await fetch(API + '/api/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+      });
+      const d = await r.json();
+      if (d.success) {
+        todos.push(d.data);
+        inp.value = '';
+        render();
+      }
+    } catch { showErr('Failed to add todo.'); }
+  }
+
+  async function toggleTodo(id, completed) {
+    try {
+      const r = await fetch(API + '/api/todos/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed })
+      });
+      const d = await r.json();
+      if (d.success) {
+        todos = todos.map(t => t.id === id ? d.data : t);
+        render();
+      }
+    } catch { showErr('Failed to update todo.'); }
+  }
+
+  async function deleteTodo(id) {
+    try {
+      const r = await fetch(API + '/api/todos/' + id, { method: 'DELETE' });
+      const d = await r.json();
+      if (d.success) {
+        todos = todos.filter(t => t.id !== id);
+        render();
+      }
+    } catch { showErr('Failed to delete todo.'); }
+  }
+
+  document.getElementById('add-btn').onclick = addTodo;
+  document.getElementById('new-title').onkeydown = e => { if (e.key === 'Enter') addTodo(); };
+
+  checkHealth();
+  loadTodos();
+  setInterval(checkHealth, 10000);
+</script>
+</body>
+</html>
