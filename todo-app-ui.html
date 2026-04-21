@@ -18,8 +18,8 @@ body {
   padding: 2.5rem 1rem 4rem;
 }
 
-body::before {
-  content: '';
+/* FIX: grid and glow must NEVER intercept clicks */
+.bg-grid {
   position: fixed;
   inset: 0;
   background-image:
@@ -46,7 +46,7 @@ body::before {
   width: 100%;
   max-width: 660px;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 /* ── Header ── */
@@ -119,8 +119,12 @@ body::before {
   background: #1e293b;
 }
 
-.s-dot.green { background: #4ade80; box-shadow: 0 0 7px rgba(74,222,128,0.7); animation: blink 2s infinite; }
-.s-dot.red   { background: #f87171; }
+.s-dot.green {
+  background: #4ade80;
+  box-shadow: 0 0 7px rgba(74,222,128,0.7);
+  animation: blink 2s infinite;
+}
+.s-dot.red { background: #f87171; }
 
 @keyframes blink {
   0%,100% { opacity:1; } 50% { opacity:0.35; }
@@ -129,7 +133,6 @@ body::before {
 .s-val { font-weight: 600; font-size: 12px; color: #94a3b8; }
 .s-val.up   { color: #4ade80; }
 .s-val.down { color: #f87171; }
-
 .vdot { width: 3px; height: 3px; border-radius: 50%; background: #1e293b; }
 
 /* ── Stats ── */
@@ -150,11 +153,9 @@ body::before {
 }
 
 .stat:hover { border-color: rgba(255,255,255,0.14); transform: translateY(-2px); }
-
 .stat-icon { font-size: 22px; margin-bottom: 8px; }
 .stat-num  { font-size: 30px; font-weight: 700; line-height: 1; margin-bottom: 5px; }
 .stat-lbl  { font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 0.6px; }
-
 .stat.total .stat-num { color: #60a5fa; }
 .stat.done  .stat-num { color: #4ade80; }
 .stat.pend  .stat-num { color: #fb923c; }
@@ -167,6 +168,8 @@ body::before {
   overflow: hidden;
   margin-bottom: 1.5rem;
   box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  position: relative;
+  z-index: 2;
 }
 
 .panel-top {
@@ -202,24 +205,30 @@ body::before {
   border-bottom: 1px solid rgba(255,255,255,0.06);
   display: flex;
   gap: 10px;
+  position: relative;
+  z-index: 3;
 }
 
 .input-wrap input {
   flex: 1;
   padding: 11px 14px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 10px;
   color: #e2e8f0;
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  position: relative;
+  z-index: 3;
+  pointer-events: all;
+  cursor: text;
 }
 
 .input-wrap input:focus {
-  border-color: rgba(99,102,241,0.5);
-  background: rgba(99,102,241,0.05);
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+  border-color: rgba(99,102,241,0.6);
+  background: rgba(99,102,241,0.07);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
 }
 
 .input-wrap input::placeholder { color: #334155; }
@@ -236,6 +245,8 @@ body::before {
   white-space: nowrap;
   transition: opacity 0.2s, transform 0.1s;
   box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+  position: relative;
+  z-index: 3;
 }
 
 .add-btn:hover  { opacity: 0.88; }
@@ -267,7 +278,6 @@ body::before {
 
 .todo-item:hover { background: rgba(255,255,255,0.04); }
 .todo-item.done  { opacity: 0.4; }
-
 .sep { height: 1px; background: rgba(255,255,255,0.04); margin: 2px 0; }
 
 .chk {
@@ -319,23 +329,17 @@ body::before {
 .del {
   width: 30px; height: 30px;
   border: none; background: transparent;
-  color: #334155;
-  cursor: pointer;
-  border-radius: 8px;
-  font-size: 20px;
+  color: #334155; cursor: pointer;
+  border-radius: 8px; font-size: 20px;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.2s, color 0.2s;
-  flex-shrink: 0;
-  line-height: 1;
+  flex-shrink: 0; line-height: 1;
 }
 
 .del:hover { background: rgba(239,68,68,0.12); color: #f87171; }
 
 /* ── Empty ── */
-.empty {
-  text-align: center;
-  padding: 3rem 1rem;
-}
+.empty { text-align: center; padding: 3rem 1rem; }
 
 .empty-box {
   width: 60px; height: 60px;
@@ -344,7 +348,6 @@ body::before {
   display: flex; align-items: center; justify-content: center;
   font-size: 26px;
   margin: 0 auto 12px;
-  color: #1e293b;
 }
 
 .empty p { font-size: 14px; color: #334155; }
@@ -372,16 +375,10 @@ body::before {
 }
 
 .pill {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 500;
-  padding: 5px 12px;
-  border-radius: 20px;
-  border: 1px solid;
-  letter-spacing: 0.2px;
-  transition: opacity 0.2s;
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500;
+  padding: 5px 12px; border-radius: 20px; border: 1px solid;
+  letter-spacing: 0.2px; transition: opacity 0.2s;
 }
 
 .pill:hover { opacity: 0.75; }
@@ -389,12 +386,13 @@ body::before {
 .pill.o { color: #fb923c; border-color: rgba(251,146,60,0.25);  background: rgba(251,146,60,0.07); }
 .pill.g { color: #4ade80; border-color: rgba(74,222,128,0.25);  background: rgba(74,222,128,0.07); }
 .pill.p { color: #a78bfa; border-color: rgba(167,139,250,0.25); background: rgba(167,139,250,0.07); }
-
 .pdot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 </style>
 </head>
 <body>
 
+<!-- Background layers — pointer-events: none so they NEVER block clicks -->
+<div class="bg-grid"></div>
 <div class="glow"></div>
 
 <div class="app">
@@ -450,7 +448,7 @@ body::before {
       <span class="cnt-badge" id="cnt">0</span>
     </div>
     <div class="input-wrap">
-      <input id="inp" type="text" placeholder="What needs to be done?" />
+      <input id="inp" type="text" placeholder="What needs to be done?" autocomplete="off" />
       <button class="add-btn" id="add-btn">+ Add</button>
     </div>
     <div id="err" class="err"></div>
@@ -486,17 +484,17 @@ async function checkHealth() {
   try {
     const d = await (await fetch(API+'/health')).json();
     const ok = d.status === 'UP';
-    document.getElementById('h-dot').className = 's-dot ' + (ok?'green':'red');
-    document.getElementById('h-val').className = 's-val ' + (ok?'up':'down');
+    document.getElementById('h-dot').className = 's-dot '+(ok?'green':'red');
+    document.getElementById('h-val').className  = 's-val '+(ok?'up':'down');
     document.getElementById('h-val').textContent = ok ? 'UP' : 'DOWN';
     if (ok) {
       document.getElementById('v-val').textContent = d.version || '1.0.0';
       document.getElementById('v-val').className = 's-val up';
     }
   } catch {
-    document.getElementById('h-dot').className = 's-dot red';
+    document.getElementById('h-dot').className  = 's-dot red';
     document.getElementById('h-val').textContent = 'Offline';
-    document.getElementById('h-val').className = 's-val down';
+    document.getElementById('h-val').className   = 's-val down';
   }
 }
 
@@ -504,9 +502,9 @@ async function checkReady() {
   try {
     const d = await (await fetch(API+'/ready')).json();
     if (d.status === 'READY') {
-      document.getElementById('r-dot').className = 's-dot green';
+      document.getElementById('r-dot').className  = 's-dot green';
       document.getElementById('r-val').textContent = 'READY';
-      document.getElementById('r-val').className = 's-val up';
+      document.getElementById('r-val').className   = 's-val up';
     }
   } catch {}
 }
@@ -550,33 +548,46 @@ async function load() {
   }
 }
 
-async function add() {
+async function addTodo() {
   const inp = document.getElementById('inp');
-  const t = inp.value.trim(); if (!t) { inp.focus(); return; }
+  const t = inp.value.trim();
+  if (!t) { inp.focus(); return; }
   try {
-    const d = await (await fetch(API+'/api/todos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t})})).json();
-    if (d.success) { todos.push(d.data); inp.value=''; render(); }
-  } catch { showErr('Failed to add.'); }
+    const d = await (await fetch(API+'/api/todos', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({title: t})
+    })).json();
+    if (d.success) { todos.push(d.data); inp.value = ''; render(); }
+  } catch { showErr('Failed to add todo.'); }
 }
 
 async function toggle(id, completed) {
   try {
-    const d = await (await fetch(API+'/api/todos/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({completed})})).json();
+    const d = await (await fetch(API+'/api/todos/'+id, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({completed})
+    })).json();
     if (d.success) { todos = todos.map(t => t.id===id ? d.data : t); render(); }
   } catch { showErr('Failed to update.'); }
 }
 
 async function del(id) {
   try {
-    const d = await (await fetch(API+'/api/todos/'+id,{method:'DELETE'})).json();
+    const d = await (await fetch(API+'/api/todos/'+id, {method:'DELETE'})).json();
     if (d.success) { todos = todos.filter(t => t.id!==id); render(); }
   } catch { showErr('Failed to delete.'); }
 }
 
-document.getElementById('add-btn').onclick = add;
-document.getElementById('inp').onkeydown = e => e.key==='Enter' && add();
+document.getElementById('add-btn').onclick = addTodo;
+document.getElementById('inp').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTodo();
+});
 
-checkHealth(); checkReady(); load();
+checkHealth();
+checkReady();
+load();
 setInterval(checkHealth, 10000);
 </script>
 </body>
